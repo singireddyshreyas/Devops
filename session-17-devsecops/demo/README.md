@@ -180,21 +180,25 @@ Push to GitHub
 ┌────────▼────────┐
 │   STEP 3: SCA   │  pip-audit — checks for vulnerable packages
 └────────┬────────┘
-         │ (all 3 must pass)
+         │
 ┌────────▼────────┐
-│  STEP 4: Build  │  docker build — creates the Docker image
+│ STEP 4: Secrets │  Gitleaks — scans committed history for secrets
+└────────┬────────┘
+         │ (all source gates must pass)
+┌────────▼────────┐
+│  STEP 5: Build  │  docker build — creates the Docker image
 └────────┬────────┘
          │
 ┌────────▼────────┐
-│  STEP 5: Scan   │  Trivy — scans the Docker image for CVEs
+│  STEP 6: Scan   │  Trivy — fails on unfixed HIGH/CRITICAL CVEs
 └────────┬────────┘
          │
 ┌────────▼────────┐
-│  STEP 6: Push   │  Pushes image to GitHub Container Registry
+│  STEP 7: Push   │  Pushes image to GitHub Container Registry
 └────────┬────────┘
          │ (only on push to main)
 ┌────────▼────────┐
-│ STEP 7: Deploy  │  kubectl apply → deploys to Kubernetes
+│ STEP 8: Deploy  │  Deploys the image to a disposable Kind cluster
 └─────────────────┘
 ```
 
@@ -209,21 +213,18 @@ git push origin main
 
 Then go to your GitHub repo → **Actions** tab to watch it run.
 
-### Required GitHub Secrets
+### GitHub credentials
 
-Go to **GitHub repo → Settings → Secrets and variables → Actions** and add:
-
-| Secret Name | Value |
-|-------------|-------|
-| `KUBECONFIG` | Contents of your `~/.kube/config` file (needed for Step 7 deploy) |
-
-> ℹ️ `GITHUB_TOKEN` is automatically provided by GitHub — you don't need to add it manually.
+`GITHUB_TOKEN` is provided automatically by GitHub Actions. The workflow
+uses it with `packages: write` to publish to GHCR and `packages: read` to
+load the image into its disposable Kind cluster. No Docker Hub credential or
+long-lived kubeconfig secret is required.
 
 ### View your Docker image after push
 
-After Step 6 runs, your image is available at:
+After Step 7 runs, your image is available at:
 ```
-ghcr.io/YOUR_USERNAME/hey-cicd:latest
+ghcr.io/<repository-owner>/session17-python:<commit-sha>
 ```
 
 Go to **GitHub repo → Packages** to see it.

@@ -9,6 +9,8 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
 
 jobs:
 
@@ -92,10 +94,30 @@ jobs:
         run: |
           pip-audit
 
+  # ========================================
+  # STEP 4 — Scan committed content for secrets
+  # ========================================
+
+  secret-scan:
+    name: Secret Scan - Gitleaks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      security-events: write
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan repository history for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ========================================
-  # STEP 4 — Build Docker Image
-  #          (only runs after steps 1, 2, 3 pass)
+  # STEP 5 — Build Docker Image
+  #          (only runs after all source checks pass)
   # ========================================
 
   docker-build:
@@ -104,6 +126,7 @@ jobs:
       - test
       - sast
       - sca
+      - secret-scan
     runs-on: ubuntu-latest
 
     steps:
@@ -117,7 +140,7 @@ jobs:
 
 
   # ========================================
-  # STEP 5 — Scan Docker Image for vulnerabilities
+  # STEP 6 — Scan Docker Image for vulnerabilities
   # ========================================
 
   image-scan:
@@ -146,46 +169,50 @@ jobs:
 
       - name: Scan image
         run: |
-          trivy image --severity HIGH,CRITICAL session17-python:${{ github.sha }}
+          trivy image --exit-code 1 --ignore-unfixed --severity HIGH,CRITICAL session17-python:${{ github.sha }}
 
 
   # ========================================
-  # STEP 6 — Push image to Docker Hub
+  # STEP 7 — Push image to GitHub Container Registry
   # ========================================
 
   push:
-    name: Push Image to Docker Hub
+    name: Push Image to GHCR
     needs:
       - image-scan
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
 
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Login to Docker Hub
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          username: nensiravaliya28
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and tag image
         run: |
           docker build \
-            -t nensiravaliya28/hey-cicd:${{ github.sha }} \
-            -t nensiravaliya28/hey-cicd:latest \
+            -t ghcr.io/${{ github.repository_owner }}/session17-python:${{ github.sha }} \
+            -t ghcr.io/${{ github.repository_owner }}/session17-python:latest \
             .
 
       - name: Push image
         run: |
-          docker push nensiravaliya28/hey-cicd:${{ github.sha }}
-          docker push nensiravaliya28/hey-cicd:latest
+          docker push ghcr.io/${{ github.repository_owner }}/session17-python:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository_owner }}/session17-python:latest
 
 
   # ========================================
-  # STEP 7 — Deploy to Kubernetes
-  #          (only runs on push to main)
+  # STEP 8 — Deploy to an ephemeral Kind cluster
   # ========================================
 
   deploy:
@@ -194,7 +221,10 @@ jobs:
       - push
     runs-on: ubuntu-latest
 
-    # Skip this step on pull requests — only deploy real merges to main
+    permissions:
+      contents: read
+      packages: read
+
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
@@ -204,11 +234,25 @@ jobs:
 
       - name: Create k8s Kind Cluster (For testing deployment)
         uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: session17-devsecops
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Load the scanned image into Kind
+        run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/session17-python:${{ github.sha }}"
+          docker pull "$IMAGE"
+          kind load docker-image "$IMAGE" --name session17-devsecops
 
       - name: Update deployment with new image tag
         run: |
-          # Replace '__IMAGE_TAG__' placeholder with the specific git sha we just pushed
-          sed -i "s|__IMAGE_TAG__|${{ github.sha }}|g" k8s/deployment.yaml
+          sed -i "s|__IMAGE_OWNER__|${{ github.repository_owner }}|g; s|__IMAGE_TAG__|${{ github.sha }}|g" k8s/deployment.yaml
 
       - name: Deploy to Kubernetes
         run: |
