@@ -133,3 +133,14 @@ charts completed with zero failures. Linting validates charts locally and
 does not claim that a release was installed on a cluster.
 
 ![Session 15 terminal validation](./proofs/terminal-validation.png)
+
+### Local command run
+
+In a disposable `/tmp` directory, `helm create my-chart` succeeded,
+`helm template my-release ./my-chart` rendered 4 manifests, and `helm lint
+./my-chart` reported `1 chart(s) linted, 0 chart(s) failed`. The documented
+`curl | bash` installer was not run because Helm is already installed.
+`helm install my-release /tmp/helm-readme-proof.jCKoWY/my-chart` failed
+because the Kubernetes API endpoint returned EOF. Install-with-values,
+upgrade, list, history, rollback and uninstall could not be verified without
+a cluster; uninstall was not run because it removes a release.
