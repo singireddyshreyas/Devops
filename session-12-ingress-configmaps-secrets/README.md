@@ -85,3 +85,11 @@ manifest syntax only; ConfigMap, Secret and Ingress behavior requires a live
 cluster and is not represented as deployed here.
 
 ![Session 12 terminal validation](./proofs/terminal-validation.png)
+
+### Local command run
+
+From this session directory, `kubectl apply -f 01-configmap/app-config.yaml
+--request-timeout=2s` failed validation because the Minikube API server was
+unavailable (`context deadline exceeded`). ConfigMap, Secret and Ingress
+operations were not applied. The Ingress example was not attempted because
+the cluster is unavailable; no cloud resources or credentials were used.
