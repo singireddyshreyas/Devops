@@ -455,3 +455,11 @@ In **Session 12: Kubernetes Ingress, ConfigMaps & Secrets**, NodePort opens too 
 - [FQDN and Service DNS](./fqdn.md)
 - [CoreDNS configuration and troubleshooting](./coredns/README.md)
 - [Workload and Service object comparison](./object-comparison.md)
+
+## Terminal proof
+
+The captured command parsed all 18 YAML files in this session. This verifies
+manifest syntax only; Service discovery and routing were not tested against a
+live cluster.
+
+![Session 11 terminal validation](./proofs/terminal-validation.png)
