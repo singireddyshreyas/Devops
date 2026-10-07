@@ -41,7 +41,20 @@ that the lab ran successfully.
 ## Terminal proof
 
 The captured command parsed all 17 YAML files and validated both monitoring
-Compose configurations. This checks local configuration only; Prometheus,
-Grafana and Argo CD were not launched in this run.
+Compose configurations. The actual Compose start/stop results are recorded
+below; Argo CD was not launched.
 
 ![Session 20 terminal validation](./proofs/terminal-validation.png)
+
+### Local command run
+
+Ran `docker compose up -d`, `docker compose ps` and `docker compose down`
+from both `03-prometheus/` and `04-grafana/`. Both deployments started
+successfully, and `down` removed the containers and networks created by these
+runs (no volumes were deleted):
+
+```text
+03-prometheus: session20-prometheus  Up  Less than a second  0.0.0.0:9090->9090/tcp
+04-grafana:    session20-prometheus  Up  Less than a second  0.0.0.0:9090->9090/tcp
+               session20-grafana     Up  Less than a second  0.0.0.0:3000->3000/tcp
+```
