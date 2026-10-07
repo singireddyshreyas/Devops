@@ -55,3 +55,11 @@ that cloud resources have been created.
 - [S3: object storage](./aws-services/03-s3/README.md)
 - [VPC: networking](./aws-services/04-vpc/README.md)
 - [DynamoDB and RDS: databases](./aws-services/05-dynamodb-rds/README.md)
+
+## Terminal proof
+
+The captured OpenTofu formatting check passed for all Terraform files in this
+session. OpenTofu is Terraform-compatible; this formatting check did not
+initialize providers or create AWS resources.
+
+![Session 18 terminal validation](./proofs/terminal-validation.png)
