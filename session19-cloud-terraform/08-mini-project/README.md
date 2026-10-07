@@ -21,7 +21,14 @@ VPC: 10.20.0.0/16
    +-- Route Table Association
    |
    +-- Web Security Group
+   |
+   +-- EC2 web instance
+   |
+   +-- Private, encrypted, versioned S3 bucket
 ```
+
+The EC2 demo exposes HTTP only and does not open SSH. S3 public access is
+blocked; the bucket is not force-deleted if it contains objects.
 
 ---
 
@@ -74,7 +81,11 @@ Terraform
                     | 10.20.1.0/24  |
                     |       |        |
                     | Security Group |
+                    |       |        |
+                    |  EC2 + Nginx   |
                     +----------------+
+
+       Terraform-managed S3 bucket (private, encrypted, versioned)
 ```
 
 ---
@@ -117,6 +128,10 @@ Plan:
 terraform plan
 ```
 
+The plan creates billable AWS resources, including an EC2 instance. Read the
+entire plan, confirm the selected account and region, and consider the
+estimated cost before applying. The project is not automatically applied.
+
 Apply:
 
 ```bash
@@ -142,11 +157,23 @@ terraform output
 Expected shape:
 
 ```text
+instance_id = "i-..."
+instance_public_dns = "ec2-...compute.amazonaws.com"
 security_group_id = "sg-..."
 subnet_id = "subnet-..."
+website_url = "http://ec2-...compute.amazonaws.com"
 vpc_cidr = "10.20.0.0/16"
 vpc_id = "vpc-..."
+s3_bucket_name = "session19-lab-..."
 ```
+
+Test the HTTP endpoint after the EC2 instance finishes bootstrapping:
+
+```bash
+curl "$(terraform output -raw website_url)"
+```
+
+The response should contain `Session 19 Terraform web demo`.
 
 Show resources:
 
@@ -162,6 +189,11 @@ aws_route_table.public
 aws_route_table_association.public
 aws_security_group.web
 aws_subnet.public
+aws_instance.web
+aws_s3_bucket.artifacts
+aws_s3_bucket_public_access_block.artifacts
+aws_s3_bucket_server_side_encryption_configuration.artifacts
+aws_s3_bucket_versioning.artifacts
 aws_vpc.main
 ```
 
@@ -201,6 +233,23 @@ aws ec2 describe-security-groups \
   --query 'SecurityGroups[].{GroupId:GroupId,VpcId:VpcId}'
 ```
 
+EC2:
+
+```bash
+aws ec2 describe-instances \
+  --instance-ids "$(terraform output -raw instance_id)" \
+  --query 'Reservations[].Instances[].{InstanceId:InstanceId,State:State.Name,PublicDnsName:PublicDnsName}'
+```
+
+S3:
+
+```bash
+aws s3api get-public-access-block \
+  --bucket "$(terraform output -raw s3_bucket_name)"
+aws s3api get-bucket-encryption \
+  --bucket "$(terraform output -raw s3_bucket_name)"
+```
+
 ---
 
 # Cleanup
@@ -219,34 +268,21 @@ yes
 Expected:
 
 ```text
-Destroy complete! Resources: 6 destroyed.
+Destroy complete! Resources: 11 destroyed.
 ```
+
+Remove any S3 test objects and versions before destroying the bucket. Stop
+the EC2 instance only if you intend to retain the rest of the infrastructure;
+`terraform destroy` removes all resources managed by this project.
 
 ---
 
-# Optional Extension - EC2
+## Security discussion
 
-After understanding the network, add an EC2 instance.
-
-The instance should use:
-
-```text
-Public Subnet
-       |
-Security Group
-       |
-EC2
-```
-
-Questions to think about:
-
-1. Which subnet should the EC2 instance use?
-2. Which security group should it use?
-3. Why does a public subnet need a route to the Internet Gateway?
-4. What else is required for an EC2 instance to be reachable from the internet?
-5. Why should SSH not normally be open to `0.0.0.0/0`?
-
-Do not add EC2 until the VPC lab works.
+This is a short-lived lab, not a production network. Explain why the instance
+has no SSH ingress, why the S3 bucket blocks public access, and what further
+controls (private subnet, IAM instance profile, restricted egress, monitoring
+and backups) a production design would need.
 
 ---
 

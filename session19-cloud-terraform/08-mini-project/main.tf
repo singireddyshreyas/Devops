@@ -38,7 +38,7 @@ resource "aws_route_table" "public" {
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id  = aws_internet_gateway.main.id
+    gateway_id = aws_internet_gateway.main.id
   }
 
   tags = {
@@ -55,21 +55,13 @@ resource "aws_route_table_association" "public" {
 
 resource "aws_security_group" "web" {
   name        = "session19-mini-web-sg"
-  description = "Allow HTTP and HTTPS for Session 19"
+  description = "Allow HTTP for the Session 19 web demo"
   vpc_id      = aws_vpc.main.id
 
   ingress {
     description = "HTTP"
     from_port   = 80
     to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "HTTPS"
-    from_port   = 443
-    to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -86,5 +78,77 @@ resource "aws_security_group" "web" {
     Name      = "session19-mini-web-sg"
     Session   = "19"
     ManagedBy = "Terraform"
+  }
+}
+
+data "aws_ssm_parameter" "amazon_linux_2023" {
+  name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+}
+
+resource "aws_instance" "web" {
+  ami                         = data.aws_ssm_parameter.amazon_linux_2023.value
+  instance_type               = var.instance_type
+  subnet_id                   = aws_subnet.public.id
+  vpc_security_group_ids      = [aws_security_group.web.id]
+  associate_public_ip_address = true
+  user_data_replace_on_change = true
+
+  user_data = <<-EOF
+    #!/bin/bash
+    dnf install -y nginx
+    echo '<h1>Session 19 Terraform web demo</h1>' > /usr/share/nginx/html/index.html
+    systemctl enable --now nginx
+  EOF
+
+  metadata_options {
+    http_tokens = "required"
+  }
+
+  root_block_device {
+    encrypted             = true
+    delete_on_termination = true
+  }
+
+  tags = {
+    Name      = "session19-mini-web"
+    Session   = "19"
+    ManagedBy = "Terraform"
+  }
+}
+
+resource "aws_s3_bucket" "artifacts" {
+  bucket_prefix = var.bucket_prefix
+  force_destroy = false
+
+  tags = {
+    Name      = "session19-mini-artifacts"
+    Session   = "19"
+    ManagedBy = "Terraform"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "artifacts" {
+  bucket                  = aws_s3_bucket.artifacts.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "artifacts" {
+  bucket = aws_s3_bucket.artifacts.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_versioning" "artifacts" {
+  bucket = aws_s3_bucket.artifacts.id
+
+  versioning_configuration {
+    status = "Enabled"
   }
 }

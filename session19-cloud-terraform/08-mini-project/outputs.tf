@@ -13,3 +13,19 @@ output "subnet_id" {
 output "security_group_id" {
   value = aws_security_group.web.id
 }
+
+output "instance_id" {
+  value = aws_instance.web.id
+}
+
+output "instance_public_dns" {
+  value = aws_instance.web.public_dns
+}
+
+output "website_url" {
+  value = "http://${aws_instance.web.public_dns}"
+}
+
+output "s3_bucket_name" {
+  value = aws_s3_bucket.artifacts.bucket
+}
