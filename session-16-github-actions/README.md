@@ -67,3 +67,24 @@ workflow. This checks YAML syntax only; it is not evidence of a completed
 GitHub Actions run.
 
 ![Session 16 terminal validation](./proofs/terminal-validation.png)
+
+### Local command run
+
+- `python3 -m pip install -r requirements.txt` was skipped because `pytest`
+  was already available in the configured virtual environment.
+- `pytest -v`: **5 passed**.
+- `python3 app/calculator.py` with input `10 + 5` then `q`: printed
+  `Result: 15.0` and exited.
+- `docker build -t session16-calculator:local .`: completed successfully.
+- `docker run --rm -i session16-calculator:local` with input `q`: printed
+  the calculator menu and `Goodbye!`. The non-interactive `-i` option was
+  used in place of `-it` for this terminal.
+- `chmod +x build.sh && ./build.sh` succeeded in a disposable copy so the
+  script's `rm -rf build` did not overwrite the repository's `build/`.
+- `gh run list --workflow=session16-cicd.yml` returned run `37646702827`;
+  `gh run view 37646702827 --json status,conclusion` returned
+  `{"conclusion":"success","status":"completed"}`.
+
+The Git initialization/push examples and intentional test-breaking scenario
+were not run: the first would reinitialize this repository and uses a
+placeholder remote, while the second deliberately changes application code.
