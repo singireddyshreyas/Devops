@@ -37,3 +37,11 @@ control before applying the Argo CD Application.
 Capture actual cluster, sync-health, replica and dashboard output as
 assignment evidence. A YAML manifest or sample output alone does not prove
 that the lab ran successfully.
+
+## Terminal proof
+
+The captured command parsed all 17 YAML files and validated both monitoring
+Compose configurations. This checks local configuration only; Prometheus,
+Grafana and Argo CD were not launched in this run.
+
+![Session 20 terminal validation](./proofs/terminal-validation.png)
