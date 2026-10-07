@@ -1,0 +1,90 @@
+name: Session 16 CI/CD
+
+on:
+  push:
+    paths:
+      - "session-16-github-actions/session-16-github-actions/10-final-cicd-pipeline/**"
+      - ".github/workflows/session16-cicd.yml"
+  pull_request:
+    paths:
+      - "session-16-github-actions/session-16-github-actions/10-final-cicd-pipeline/**"
+      - ".github/workflows/session16-cicd.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  APP_PATH: session-16-github-actions/session-16-github-actions/10-final-cicd-pipeline
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/session16-calculator
+
+jobs:
+  test:
+    name: Test and package calculator
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: session-16-github-actions/session-16-github-actions/10-final-cicd-pipeline
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run tests
+        run: pytest -v
+      - name: Build application artifact
+        run: bash build.sh
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: calculator-build
+          path: session-16-github-actions/session-16-github-actions/10-final-cicd-pipeline/build/
+          if-no-files-found: error
+
+  security-check:
+    name: Check for accidentally committed secret files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Check for common private-key and environment files
+        run: |
+          if find "$APP_PATH" -type f \( \
+            -name ".env" -o -name "*.pem" -o -name "*.key" \
+          \) -print -quit | grep -q .; then
+            echo "A potentially sensitive file was found in the demo."
+            exit 1
+          fi
+          echo "No common sensitive files found."
+
+  container:
+    name: Build and publish container
+    needs:
+      - test
+      - security-check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build (and publish on push)
+        uses: docker/build-push-action@v6
+        with:
+          context: session-16-github-actions/session-16-github-actions/10-final-cicd-pipeline
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
