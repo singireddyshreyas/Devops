@@ -87,14 +87,34 @@ before deleting the target Deployment.
 ## Terminal proof
 
 The captured command parsed the non-template YAML files and passed Helm lint
-for the HPA chart. These checks do not demonstrate live storage provisioning,
-Metrics Server or probe behavior.
+for the HPA chart. Live storage, Metrics Server, HPA and probe results from
+the local cluster are also recorded below.
 
 ![Session 13 terminal validation](./proofs/terminal-validation.png)
 
 ### Local command run
 
-`minikube addons enable metrics-server` was attempted and failed while applying
-the addon manifests: the Minikube API endpoint at `localhost:8443` refused
-connections. The volume, HPA and probe workload commands were not run because
-the API server is unavailable. No cloud resources were created.
+The commands ran on the local `session-labs` cluster in namespace
+`session13-storage` (the PV itself is cluster-scoped):
+
+```text
+emptydir-demo, hostpath-demo, storage-demo, hpa-demo and liveness-demo: Running/Ready
+student-pvc: Bound, 500Mi, StorageClass standard
+student-pv: Available, 1Gi, reclaim policy Retain
+kubectl top pods: metrics available (about 1-2m CPU and 8Mi memory per Pod)
+hpa-demo: CPU 0%/50%, 1 current / 1 desired replica
+liveness-demo: HTTP liveness probe configured, 0 restarts; probe requests returned HTTP 200
+```
+
+The first storage run exposed a static binding mismatch: the PVC acquired the
+default `standard` StorageClass and dynamically bound to a new PV, leaving
+`student-pv` Available. The PV and PVC manifests now both set
+`storageClassName: ""` so a fresh run will bind the static claim explicitly;
+client dry-run validation passed. The already-bound PVC was not deleted or
+recreated, so the corrected static binding was not applied to the live run.
+
+The `hpa/load_generator.sh` script was not started: it creates ten unbounded
+request loops and defaults to a different `yatri-backend-service` target. No
+load was generated. Metrics Server was enabled; CPU metrics became available
+after its initial scrape. The addon, workloads, and PVC remain present; cleanup
+was not performed. No cloud resources were created.
