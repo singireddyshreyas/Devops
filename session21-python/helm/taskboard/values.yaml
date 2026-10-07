@@ -7,11 +7,12 @@ backend:
 replicaCount: 2
 namespace: taskboard
 imagePullSecrets: []
+application:
+  name: TaskBoard API
 postgres:
   host: taskboard-postgres
   database: taskboard
-  username: taskboard
-  password: taskboard
+  existingSecret: taskboard-postgres-credentials
 ingress:
   enabled: false
   host: taskboard.local

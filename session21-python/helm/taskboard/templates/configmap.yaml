@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "taskboard.fullname" . }}-config
+  labels:
+    app.kubernetes.io/name: {{ include "taskboard.fullname" . }}
+data:
+  APP_NAME: {{ .Values.application.name | quote }}

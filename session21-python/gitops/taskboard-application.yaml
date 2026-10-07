@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: taskboard
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/singireddyshreyas/Devops.git
+    targetRevision: main
+    path: session21-python/helm/taskboard
+    helm:
+      parameters:
+        - name: backend.image
+          value: ghcr.io/singireddyshreyas/taskboard-backend
+        - name: backend.tag
+          value: SET_TO_TESTED_COMMIT_SHA
+        - name: frontend.image
+          value: ghcr.io/singireddyshreyas/taskboard-frontend
+        - name: frontend.tag
+          value: SET_TO_TESTED_COMMIT_SHA
+        - name: imagePullSecrets[0].name
+          value: ghcr-pull-secret
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: taskboard
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

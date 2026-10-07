@@ -78,6 +78,7 @@ session21-devops-capstone-final/
 ├── helm/taskboard/            # Kubernetes package
 ├── k8s/                      # namespace/bootstrap manifests
 ├── monitoring/               # Prometheus/Grafana values
+├── gitops/                   # Argo CD Application and workflow
 ├── troubleshooting/          # deliberately broken manifests
 ├── scripts/                  # load-test helpers
 └── .github/workflows/        # CI/CD
@@ -153,9 +154,10 @@ Requirements:
 - Docker Desktop / Docker Engine
 - Docker Compose
 
-Run:
+Set a throwaway local database password in your shell, then start the stack:
 
 ```bash
+export POSTGRES_PASSWORD="$(openssl rand -hex 24)"
 docker compose up --build
 ```
 
@@ -185,6 +187,12 @@ Delete database volume too:
 docker compose down -v
 ```
 
+Clear the environment variable after stopping the stack:
+
+```bash
+unset POSTGRES_PASSWORD
+```
+
 ---
 
 ## 6. Run backend directly
@@ -201,10 +209,15 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Set the database connection:
+Set the database connection without putting a password in this repository:
 
 ```bash
-export DATABASE_URL='postgresql+psycopg://taskboard:taskboard@localhost:5432/taskboard'
+export DB_HOST=localhost
+export DB_PORT=5432
+export DB_NAME=taskboard
+export DB_USER=taskboard
+read -rsp "Database password: " DB_PASSWORD
+echo
 ```
 
 Run migrations:
@@ -217,6 +230,12 @@ Start FastAPI:
 
 ```bash
 uvicorn app.main:app --reload --port 8000
+```
+
+After stopping the API, clear the password from the shell:
+
+```bash
+unset DB_PASSWORD
 ```
 
 Test:
@@ -344,9 +363,11 @@ The workflow has three conceptual stages:
 ```text
 TEST
  ↓
-BUILD + SECURITY SCAN + PUSH
+SAST + SCA + SECRET SCAN
  ↓
-DEPLOY
+BUILD + CONTAINER SCAN + PUSH
+ ↓
+OPTIONAL HELM DEPLOY
 ```
 
 ### Test job
@@ -358,18 +379,39 @@ DEPLOY
 - setup Node
 - build React frontend
 
+### Security jobs
+
+- CodeQL analyzes the Python and JavaScript/TypeScript source.
+- `pip-audit` and `npm audit` fail on dependency vulnerabilities.
+- Gitleaks scans the Git history for accidentally committed secrets.
+
 ### Build/scan/push job
 
 - build backend image
 - build frontend image
-- scan both with Trivy
-- push to GHCR
+- block on HIGH/CRITICAL Trivy findings
+- push to GHCR on a push to `main`
 
-### Deploy job
+The active root workflow is
+[`../.github/workflows/session21-capstone.yml`](../.github/workflows/session21-capstone.yml).
+It runs tests, CodeQL, Python/npm dependency audits and Gitleaks on pushes and
+pull requests that touch this project. The standalone workflow in
+[`.github/workflows/ci-cd.yml`](./.github/workflows/ci-cd.yml) also includes
+the optional cluster deployment below when this folder is used as its own
+repository.
 
-- install Helm
-- configure kubectl
-- run `helm upgrade --install`
+In the monorepo, the root workflow can deploy only on a push to `main` and
+only when the GitHub repository variable `TASKBOARD_DEPLOY_ENABLED` is set
+to `true`. Configure these Actions secrets only if deploying to a cluster
+you control:
+
+- `KUBE_CONFIG_DATA`: base64-encoded kubeconfig for the target cluster.
+- `POSTGRES_USERNAME` and `POSTGRES_PASSWORD`: database credentials.
+- `GHCR_USERNAME` and `GHCR_READ_TOKEN`: a principal/token with read access
+  to the private GHCR packages.
+
+The workflow creates Kubernetes Secrets from these values; do not put
+credentials in Helm values or commit them to Git.
 
 The image tag is the Git commit SHA.
 
@@ -473,10 +515,30 @@ A namespace provides logical isolation for the application.
 Instead of maintaining many manually edited YAML files, Helm turns the Kubernetes deployment into a reusable package.
 
 ```bash
-helm upgrade --install taskboard ./helm/taskboard \
-  --namespace taskboard \
-  --create-namespace
+helm lint ./helm/taskboard
+helm template taskboard ./helm/taskboard -n taskboard
 ```
+
+Create the external database Secret before installing the chart. This avoids
+storing credentials in `values.yaml` or a committed Secret manifest:
+
+```bash
+kubectl create namespace taskboard --dry-run=client -o yaml | kubectl apply -f -
+read -rsp "Database password: " POSTGRES_PASSWORD
+echo
+kubectl create secret generic taskboard-postgres-credentials \
+  --namespace taskboard \
+  --from-literal=username=taskboard \
+  --from-literal=password="$POSTGRES_PASSWORD"
+unset POSTGRES_PASSWORD
+helm upgrade --install taskboard ./helm/taskboard -n taskboard
+```
+
+The chart creates a ConfigMap, Deployments, Services, an HPA, probes and a
+PostgreSQL PVC. The password remains in the external Secret, not in Helm
+values. If the application images are private, create a namespace-scoped
+GHCR pull Secret and set `imagePullSecrets` in the chart. In production, use
+a managed secret provider and managed database.
 
 Important Helm concepts:
 
@@ -602,9 +664,20 @@ Useful questions:
 
 ---
 
-# PART N — TROUBLESHOOTING LAB
+# PART N — GITOPS
 
-## 23. Broken image
+## 23. Argo CD
+
+[`gitops/`](./gitops/) contains an Argo CD Application that watches the Helm
+chart in this repository. Update its tested image SHA values through Git,
+then observe Argo CD synchronize and self-heal the cluster. Create database
+and image-pull Secrets out of band; never commit credentials.
+
+---
+
+# PART O — TROUBLESHOOTING LAB
+
+## 24. Broken image
 
 Apply:
 
@@ -632,7 +705,7 @@ wrong image/tag
 fix deployment
 ```
 
-## 24. Broken Service
+## 25. Broken Service
 
 Apply:
 
@@ -654,7 +727,7 @@ No matching labels = no endpoints = no traffic.
 
 ---
 
-# PART O — FINAL DEMO
+# PART P — FINAL DEMO
 
 ### 1. Application
 
