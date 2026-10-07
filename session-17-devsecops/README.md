@@ -32,3 +32,10 @@ files in the demo. This is a syntax check only; SAST, dependency, secret and
 container scans must be evidenced by an actual pipeline run.
 
 ![Session 17 terminal validation](./proofs/terminal-validation.png)
+
+### Local command run
+
+This session overview contains no runnable shell-command blocks, so there
+were no overview commands to execute. The linked `demo/README.md` has its own
+lab commands; those nested README commands are outside the overview-only
+scope selected for this run.
