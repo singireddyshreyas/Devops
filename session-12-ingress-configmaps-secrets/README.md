@@ -77,3 +77,11 @@ kubectl get endpoints <service-name>
 
 Do not claim successful cluster execution from the example output in a lab
 guide; capture the output from your own cluster.
+
+## Terminal proof
+
+The captured command parsed all 13 YAML files in this session. It checks
+manifest syntax only; ConfigMap, Secret and Ingress behavior requires a live
+cluster and is not represented as deployed here.
+
+![Session 12 terminal validation](./proofs/terminal-validation.png)
