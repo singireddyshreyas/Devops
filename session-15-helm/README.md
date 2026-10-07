@@ -125,3 +125,11 @@ A: Inspect helm secrets with kubectl get secrets -l owner=helm. Find the stuck p
 * **Helm Documentation:** https://helm.sh/docs/
 * **Helm Chart Template Guide:** https://helm.sh/docs/chart_template_guide/
 * **Helm CLI Reference:** https://helm.sh/docs/helm/
+
+## Terminal proof
+
+The captured command ran `helm lint` on every chart in this session; all nine
+charts completed with zero failures. Linting validates charts locally and
+does not claim that a release was installed on a cluster.
+
+![Session 15 terminal validation](./proofs/terminal-validation.png)
