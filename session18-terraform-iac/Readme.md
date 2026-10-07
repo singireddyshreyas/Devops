@@ -63,3 +63,20 @@ session. OpenTofu is Terraform-compatible; this formatting check did not
 initialize providers or create AWS resources.
 
 ![Session 18 terminal validation](./proofs/terminal-validation.png)
+
+### Local command run
+
+The documented `terraform` and `aws` executables are not installed
+(`terraform: command not found`, `aws: command not found`). OpenTofu v1.13.1
+was used for the local Terraform-compatible checks:
+
+```text
+tofu init -backend=false  -> initialized hashicorp/aws v6.66.0
+tofu fmt -check          -> passed
+tofu validate            -> Success! The configuration is valid.
+```
+
+The first validation attempt found invalid `type` arguments in `outputs.tf`;
+those unsupported attributes were removed before the successful checks above.
+`terraform plan`, `apply` and `destroy` were not run: they require AWS access,
+and `apply`/`destroy` would change cloud resources.
