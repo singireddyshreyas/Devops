@@ -24,3 +24,11 @@ Follow [`demo/README.md`](./demo/README.md) for local setup, pipeline
 configuration and cleanup. GitHub Actions results and screenshots must be
 captured from an actual run; documentation examples are not execution
 evidence.
+
+## Terminal proof
+
+The captured command parsed the two YAML workflow and Kubernetes manifest
+files in the demo. This is a syntax check only; SAST, dependency, secret and
+container scans must be evidenced by an actual pipeline run.
+
+![Session 17 terminal validation](./proofs/terminal-validation.png)
