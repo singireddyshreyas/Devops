@@ -81,15 +81,27 @@ guide; capture the output from your own cluster.
 ## Terminal proof
 
 The captured command parsed all 13 YAML files in this session. It checks
-manifest syntax only; ConfigMap, Secret and Ingress behavior requires a live
-cluster and is not represented as deployed here.
+manifest syntax. ConfigMap, Secret and Ingress behavior was also exercised on
+the local `session-labs` cluster; results are recorded below.
 
 ![Session 12 terminal validation](./proofs/terminal-validation.png)
 
 ### Local command run
 
-From this session directory, `kubectl apply -f 01-configmap/app-config.yaml
---request-timeout=2s` failed validation because the Minikube API server was
-unavailable (`context deadline exceeded`). ConfigMap, Secret and Ingress
-operations were not applied. The Ingress example was not attempted because
-the cluster is unavailable; no cloud resources or credentials were used.
+Commands ran in the isolated `session12-ingress` namespace:
+
+```text
+ConfigMap yatri-app-config: created; 5 data keys verified with get/describe
+Secret yatri-db-secret: created; 3 data keys verified (values not printed)
+Ingress controller: NGINX addon enabled; controller Pod Ready
+frontend-service and backend-service: each had 1/1 Ready Pod and a Service endpoint
+app-ingress: created for host myapp.local; controller scheduled a sync
+curl -H 'Host: myapp.local' http://127.0.0.1:18080/ -> HTTP 200, NGINX welcome page
+curl -H 'Host: myapp.local' http://127.0.0.1:18080/api/ -> HTTP 404 from the test backend's default NGINX page
+```
+
+The ingress controller was tested using a temporary local port-forward. The
+`/api/` request reached the backend Service, but the temporary NGINX test
+backend has no `/api` handler, so its 404 is not evidence of a routing failure.
+No cloud resources or credentials were used. The controller addon and lab
+resources remain running; cleanup was not performed.
