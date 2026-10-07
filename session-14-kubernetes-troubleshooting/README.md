@@ -390,3 +390,10 @@ for the demo chart. It does not represent troubleshooting against a live
 Kubernetes cluster.
 
 ![Session 14 terminal validation](./proofs/terminal-validation.png)
+
+### Local command run
+
+`kubectl get pods --request-timeout=2s` returned
+`context deadline exceeded`; Minikube's API server is unavailable. The
+`describe`, logs, exec, Events, DNS and metrics exercises were not run because
+they require a responsive cluster. No resources were changed.
