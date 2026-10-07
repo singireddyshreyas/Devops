@@ -386,14 +386,33 @@ output and do not leave intentionally broken resources running.
 ## Terminal proof
 
 The captured command parsed the non-template YAML files and passed Helm lint
-for the demo chart. It does not represent troubleshooting against a live
-Kubernetes cluster.
+for the demo chart. Live `kubectl` troubleshooting command results are
+recorded below.
 
 ![Session 14 terminal validation](./proofs/terminal-validation.png)
 
 ### Local command run
 
-`kubectl get pods --request-timeout=2s` returned
-`context deadline exceeded`; Minikube's API server is unavailable. The
-`describe`, logs, exec, Events, DNS and metrics exercises were not run because
-they require a responsive cluster. No resources were changed.
+Commands ran on the local `session-labs` cluster in the isolated
+`session14-troubleshooting` namespace:
+
+```text
+kubectl get pods -o wide: troubleshooting-nginx 1/1 Running, 0 restarts
+kubectl describe pod: Running on session-labs; Scheduled, Pulled, Created and Started Events
+kubectl logs: NGINX startup output returned
+kubectl logs --previous: no previous terminated container (0 restarts)
+kubectl exec: nginx -v succeeded; this NGINX image does not include wget
+kubectl get events: successful scheduling and container startup events
+kubectl explain pods.spec.containers: schema returned
+kubectl top pods: troubleshooting-nginx used about 2m CPU and 8Mi memory
+kubectl get services,endpoints,endpointslices: Service endpoint 10.244.0.56:80
+FQDN troubleshooting-service.session14-troubleshooting.svc.cluster.local -> 10.110.75.163
+curl through Service DNS: NGINX welcome page returned
+```
+
+The connectivity request used the existing curl diagnostic Pod in
+`session11-services`, because `nginx:1.27` has no `wget` binary. Metrics
+Server needed its first scrape before `kubectl top pods` returned data; the
+subsequent query succeeded. No intentionally broken workloads were created.
+The Session 14 Pod and Service remain deployed pending approval for cleanup;
+no cloud resources were used.
