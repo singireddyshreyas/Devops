@@ -886,3 +886,34 @@ The screenshot records successful Helm chart linting and Docker Compose
 configuration validation. It does not claim a live cluster or AWS deployment.
 
 ![Session 21 terminal validation](./proofs/terminal-validation.png)
+
+### Local command run
+
+- `POSTGRES_PASSWORD=<local test value> COMPOSE_PROJECT_NAME=session21-proof docker compose up --build -d` built the frontend, backend and PostgreSQL images. The first backend start exposed an Alembic URL configuration error; `alembic/env.py` now uses the resolved SQLAlchemy URL, and the stack started successfully on the next run.
+- `docker compose ps`: frontend and backend were Up; PostgreSQL was healthy.
+- `curl http://localhost:8000/health` returned `{"status":"UP"}`;
+  `/ready` returned `{"status":"READY"}`; `/api/tasks` returned `[]`.
+  The frontend returned HTTP 200 and the TaskBoard HTML page.
+- `docker build -t taskboard-backend:local ./backend` and
+  `docker build -t taskboard-frontend:local ./frontend` both completed.
+- The backend tests initially exposed that the test client did not enter the
+  FastAPI lifespan, so the SQLite test table was not created. The test now
+  uses `TestClient` as a context manager. Running pytest in the Python 3.12
+  backend image then returned **4 passed** (3 deprecation warnings).
+- `helm lint ./helm/taskboard`: **1 chart linted, 0 failed**.
+  `helm template taskboard ./helm/taskboard -n taskboard` rendered **10**
+  manifest documents.
+- The Terraform files initially failed parsing due to invalid single-line
+  block definitions. They were reformatted; in a disposable copy,
+  `tofu init -backend=false` and `tofu validate` succeeded.
+- `docker compose down` removed the test containers and network. The database
+  volume `session21-proof_postgres-data` was preserved as requested.
+
+The host Python is 3.9.6, below this project's Python 3.12 requirement, so
+the app tests ran in the Python 3.12 image. Minikube still reports
+`K8S_APISERVER_MISSING`; Kubernetes apply/Helm install operations were not
+successful against a cluster. Terraform/AWS plan, apply and destroy commands
+were not run because they require cloud access and may incur charges or change
+infrastructure. `docker compose down -v` was not run to preserve database
+data. Git init/push examples with placeholder remotes and the intentionally
+broken-image/service exercises were also not run.
