@@ -879,3 +879,10 @@ Troubleshooting
 ```
 
 That is the actual objective of Session 21.
+
+## Terminal proof
+
+The screenshot records successful Helm chart linting and Docker Compose
+configuration validation. It does not claim a live cluster or AWS deployment.
+
+![Session 21 terminal validation](./proofs/terminal-validation.png)
