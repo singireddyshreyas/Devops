@@ -463,3 +463,12 @@ manifest syntax only; Service discovery and routing were not tested against a
 live cluster.
 
 ![Session 11 terminal validation](./proofs/terminal-validation.png)
+
+### Local command run
+
+`kubectl get pods -l app=yatri-backend -o wide --request-timeout=2s`
+returned `context deadline exceeded` because the local Minikube API server
+did not start (`K8S_APISERVER_MISSING`). The Service, DNS and endpoint
+examples were not run without an API server. The LoadBalancer example and
+cleanup command were also not run; they can provision cloud infrastructure or
+delete resources and require a working cluster and explicit approval.
