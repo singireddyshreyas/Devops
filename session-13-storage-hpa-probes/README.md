@@ -91,3 +91,10 @@ for the HPA chart. These checks do not demonstrate live storage provisioning,
 Metrics Server or probe behavior.
 
 ![Session 13 terminal validation](./proofs/terminal-validation.png)
+
+### Local command run
+
+`minikube addons enable metrics-server` was attempted and failed while applying
+the addon manifests: the Minikube API endpoint at `localhost:8443` refused
+connections. The volume, HPA and probe workload commands were not run because
+the API server is unavailable. No cloud resources were created.
