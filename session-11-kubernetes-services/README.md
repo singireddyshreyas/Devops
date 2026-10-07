@@ -459,16 +459,27 @@ In **Session 12: Kubernetes Ingress, ConfigMaps & Secrets**, NodePort opens too 
 ## Terminal proof
 
 The captured command parsed all 18 YAML files in this session. This verifies
-manifest syntax only; Service discovery and routing were not tested against a
-live cluster.
+manifest syntax. Live Service and DNS results are recorded below.
 
 ![Session 11 terminal validation](./proofs/terminal-validation.png)
 
 ### Local command run
 
-`kubectl get pods -l app=yatri-backend -o wide --request-timeout=2s`
-returned `context deadline exceeded` because the local Minikube API server
-did not start (`K8S_APISERVER_MISSING`). The Service, DNS and endpoint
-examples were not run without an API server. The LoadBalancer example and
-cleanup command were also not run; they can provision cloud infrastructure or
-delete resources and require a working cluster and explicit approval.
+Commands ran on the local `session-labs` cluster in the isolated
+`session11-services` namespace:
+
+```text
+yatri-backend Deployment: 3/3 Pods Running
+yatri-backend-service: ClusterIP 10.98.7.247; 3 ready endpoints
+FQDN yatri-backend-service.session11-services.svc.cluster.local -> 10.98.7.247
+curl http://yatri-backend-service:80 -> Backend v1.0.0 listening on port 5000
+curl http://yatri-backend-service/healthz -> {"status":"healthy","service":"yatri-backend"}
+yatri-backend-nodeport -> NodePort 30080
+yatri-backend-lb -> LoadBalancer EXTERNAL-IP <pending> (local Minikube; no cloud LB)
+broken-backend-service -> endpoints <none>; curl failed to connect, as expected
+```
+
+The short-name `nslookup` also displayed intermediate search-domain NXDOMAIN
+lookups; the explicit FQDN resolved successfully. The `kubectl delete` cleanup
+command was not run; the lab resources remain in `session11-services` pending
+approval to delete them.
