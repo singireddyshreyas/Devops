@@ -83,3 +83,11 @@ is illustrative and is not a substitute for a cluster run.
 Delete the resources created by each exercise using its manifest or the
 cleanup instructions in the mini-project guide. Remove the load generator
 before deleting the target Deployment.
+
+## Terminal proof
+
+The captured command parsed the non-template YAML files and passed Helm lint
+for the HPA chart. These checks do not demonstrate live storage provisioning,
+Metrics Server or probe behavior.
+
+![Session 13 terminal validation](./proofs/terminal-validation.png)
