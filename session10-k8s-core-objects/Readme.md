@@ -131,3 +131,11 @@ kubectl delete -f 04-recreate/deployment-v1.yaml -f 04-recreate/service.yaml
 Repeat the lifecycle apply/inspect/cleanup process for the remaining numbered
 manifests. Replace resource names in commands with the names declared in each
 manifest when they differ.
+
+## Terminal proof
+
+The captured command parsed all 42 YAML files in this session. This is a
+syntax check only; a live Kubernetes cluster was not available for rollout
+verification.
+
+![Session 10 terminal validation](./proofs/terminal-validation.png)
