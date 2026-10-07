@@ -9,7 +9,6 @@ terraform-s3-demo/
 |-- terraform.tf
 |-- providers.tf
 |-- variables.tf
-|-- terraform.tfvars
 |-- main.tf
 |-- outputs.tf
 |-- .gitignore
@@ -27,9 +26,6 @@ Provider Configuration
 variables.tf
      |
      v
-terraform.tfvars
-     |
-     v
 main.tf
      |
      v
@@ -37,6 +33,10 @@ aws_s3_bucket.demo
      |
      v
 AWS S3 Bucket
+     |
+     +-- Public access blocked
+     +-- Server-side encryption enabled
+     +-- Versioning enabled
      |
      v
 outputs.tf
@@ -103,7 +103,7 @@ terraform plan
 Expected:
 
 ```text
-Plan: 1 to add, 0 to change, 0 to destroy.
+Plan: 4 to add, 0 to change, 0 to destroy.
 ```
 
 ### 5. Apply
@@ -129,10 +129,10 @@ yes
 Expected:
 
 ```text
-Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+Apply complete! Resources: 4 added, 0 changed, 0 destroyed.
 Outputs:
-bucket_arn = "arn:aws:s3:::demo"
-bucket_name = "demo"
+bucket_arn = "arn:aws:s3:::devops-session18-..."
+bucket_name = "devops-session18-..."
 bucket_region = "ap-south-1"
 ```
 
@@ -146,6 +146,9 @@ Expected:
 
 ```text
 aws_s3_bucket.demo
+aws_s3_bucket_public_access_block.demo
+aws_s3_bucket_server_side_encryption_configuration.demo
+aws_s3_bucket_versioning.demo
 ```
 
 Inspect the resource:
@@ -169,7 +172,7 @@ terraform output bucket_name
 Expected:
 
 ```text
-"demo"
+"devops-session18-..."
 ```
 
 ### 8. Verify Using AWS CLI
@@ -181,7 +184,7 @@ aws s3 ls
 Or:
 
 ```bash
-aws s3api head-bucket --bucket demo
+aws s3api head-bucket --bucket "$(terraform output -raw bucket_name)"
 ```
 
 ### 9. Destroy
@@ -207,8 +210,11 @@ yes
 Expected:
 
 ```text
-Destroy complete! Resources: 1 destroyed.
+Destroy complete! Resources: 4 destroyed.
 ```
+
+Terraform does not force-empty the bucket. Delete test objects and object
+versions before destroying it, or AWS will reject the bucket deletion.
 
 ## Complete Demo
 
