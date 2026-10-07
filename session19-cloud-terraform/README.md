@@ -14,3 +14,11 @@ The captured OpenTofu formatting check passed for the Terraform files in
 this session. It did not initialize providers or create AWS resources.
 
 ![Session 19 terminal validation](./proofs/terminal-validation.png)
+
+### Local command run
+
+This overview contains no shell-command blocks. As a local check, I ran
+`tofu fmt -check -recursive session19-cloud-terraform`; it exited successfully
+with `Terraform formatting check passed.` The detailed Terraform and AWS
+commands are in the linked lab READMEs and were not included in the
+overview-only scope. No AWS plan or infrastructure change was made.
