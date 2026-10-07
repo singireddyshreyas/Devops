@@ -135,17 +135,34 @@ manifest when they differ.
 ## Terminal proof
 
 The captured command parsed all 42 YAML files in this session. This is a
-syntax check only; a live Kubernetes cluster was not available for rollout
-verification.
+syntax check. Live rollout results are recorded below.
 
 ![Session 10 terminal validation](./proofs/terminal-validation.png)
 
 ### Local command run
 
-The cluster prerequisite was checked locally. `minikube start --driver=docker`
-failed because the API server process did not appear
-(`K8S_APISERVER_MISSING`); `kubectl cluster-info --request-timeout=10s` and
-`kubectl get nodes --request-timeout=10s -o wide` both ended with
-`context deadline exceeded`. The workload apply, rollout, inspection and
-cleanup examples below were not run because this cluster has no reachable
-API server.
+The pre-existing Minikube profile failed with `K8S_APISERVER_MISSING`. A
+separate profile started successfully:
+
+```text
+minikube start --profile session-labs --driver=docker --kubernetes-version=v1.35.0
+kubectl cluster-info -> Kubernetes control plane is running
+kubectl get nodes    -> session-labs Ready, Kubernetes v1.35.0
+```
+
+The workload and strategy commands completed against that local cluster:
+
+```text
+Pod nginx-pod: Running, 1/1 Ready
+ReplicaSet nginx-rs: 3/3 Ready
+Deployment nginx-deployment: rollout successful, 3/3 Ready
+Rolling update: rollout successful; history contains 2 revisions
+Blue/green: app-blue 3/3 Ready; app-green 3/3 Ready
+Canary: app-stable 9/9 Ready; app-canary 1/1 Ready
+Recreate: rollout successful; 3/3 Ready
+Lifecycle Pod lifecycle-running: Running, 1/1 Ready; nginx logs captured
+```
+
+The resources were placed in isolated `session10-*` namespaces on the
+`session-labs` context. They remain deployed; the README cleanup commands
+were not run because deleting cluster resources requires your approval.
