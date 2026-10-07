@@ -342,3 +342,43 @@ Students should remember this:
 * Troubleshoot Services
 * Test Kubernetes DNS
 * Identify root causes instead of guessing
+
+---
+
+## Assignment command practice
+
+Run these commands against a lab resource and record what each result tells
+you:
+
+```bash
+kubectl get pods -o wide
+kubectl describe pod <pod-name>
+kubectl logs <pod-name>
+kubectl logs <pod-name> --previous
+kubectl exec -it <pod-name> -- sh
+kubectl get events --sort-by=.metadata.creationTimestamp
+kubectl explain pods.spec.containers
+kubectl top pods
+kubectl get services,endpoints,endpointslices
+```
+
+`kubectl top` requires Metrics Server. If it is unavailable, record that
+prerequisite rather than treating the missing metrics as zero utilization.
+Use `kubectl get -o wide` to include node and IP information; use `describe`
+and Events to investigate why a resource is not ready.
+
+## Additional common failure states
+
+| Symptom | First checks | Common causes to investigate |
+| --- | --- | --- |
+| `ErrImagePull` / `ImagePullBackOff` | `kubectl describe pod <pod-name>` | Image name or tag typo, registry access, missing image pull credentials |
+| `ContainerCreating` | `kubectl describe pod <pod-name>` and Events | Image download, volume mount, CNI or node-level startup issue |
+| Configuration failure | `kubectl describe pod <pod-name>` and `kubectl logs <pod-name> --previous` | Missing ConfigMap/Secret key, invalid value, incorrect mount or environment variable |
+| Service has no endpoints | `kubectl get pods --show-labels` and `kubectl get endpoints <service-name>` | Selector mismatch, Pods not ready, or port mismatch |
+| DNS lookup fails | `nslookup <service-name>.<namespace>.svc` from a client Pod | Wrong name/namespace, CoreDNS issue, or network policy blocking DNS |
+
+For every challenge in [`mini-project/`](./mini-project/), follow the same
+sequence: identify the symptom, gather `get`/`describe`/Events/log evidence,
+write down the root cause, apply the smallest correction, and verify the
+resource and application connectivity. Capture actual before-and-after
+output and do not leave intentionally broken resources running.
