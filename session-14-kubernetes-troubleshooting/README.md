@@ -382,3 +382,11 @@ sequence: identify the symptom, gather `get`/`describe`/Events/log evidence,
 write down the root cause, apply the smallest correction, and verify the
 resource and application connectivity. Capture actual before-and-after
 output and do not leave intentionally broken resources running.
+
+## Terminal proof
+
+The captured command parsed the non-template YAML files and passed Helm lint
+for the demo chart. It does not represent troubleshooting against a live
+Kubernetes cluster.
+
+![Session 14 terminal validation](./proofs/terminal-validation.png)
