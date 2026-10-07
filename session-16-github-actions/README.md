@@ -59,3 +59,11 @@ gh run view <run-id> --log
 
 Do not describe an expected workflow result as a successful run until the
 corresponding GitHub Actions job has actually completed.
+
+## Terminal proof
+
+The captured command parsed all 22 YAML examples and the root Session 16
+workflow. This checks YAML syntax only; it is not evidence of a completed
+GitHub Actions run.
+
+![Session 16 terminal validation](./proofs/terminal-validation.png)

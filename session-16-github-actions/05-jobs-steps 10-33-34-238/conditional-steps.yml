@@ -19,4 +19,5 @@ jobs:
 
       - name: Notification step (Always runs)
         if: always()
-        run: echo "Workflow finished with job status: ${{ job.status }}"
+        run: |
+          echo "Workflow finished with job status: ${{ job.status }}"
