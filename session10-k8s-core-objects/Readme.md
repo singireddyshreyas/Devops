@@ -139,3 +139,13 @@ syntax check only; a live Kubernetes cluster was not available for rollout
 verification.
 
 ![Session 10 terminal validation](./proofs/terminal-validation.png)
+
+### Local command run
+
+The cluster prerequisite was checked locally. `minikube start --driver=docker`
+failed because the API server process did not appear
+(`K8S_APISERVER_MISSING`); `kubectl cluster-info --request-timeout=10s` and
+`kubectl get nodes --request-timeout=10s -o wide` both ended with
+`context deadline exceeded`. The workload apply, rollout, inspection and
+cleanup examples below were not run because this cluster has no reachable
+API server.
