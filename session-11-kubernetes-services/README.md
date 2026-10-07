@@ -448,3 +448,10 @@ kubectl delete -f troubleshooting/empty-endpoints.yaml
 ## Next Session Connection
 
 In **Session 12: Kubernetes Ingress, ConfigMaps & Secrets**, NodePort opens too many non-standard ports (`:30080`) and LoadBalancer gets expensive if you create one per microservice. You will learn how **Ingress Controllers** route traffic from a single public domain (`yatri.com/api` vs `yatri.com/app`) and manage configuration and passwords securely with ConfigMaps and Secrets.
+
+## Assignment references
+
+- [Service type exercises](./01-clusterip/README.md)
+- [FQDN and Service DNS](./fqdn.md)
+- [CoreDNS configuration and troubleshooting](./coredns/README.md)
+- [Workload and Service object comparison](./object-comparison.md)
